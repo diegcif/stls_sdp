@@ -7,4 +7,4 @@ find the closest rank deficient matrix to *θ* in *L*.
 Some common choices for the affine space *L* include the spaces of Hankel, Toeplitz and Sylvester matrices.
 The SDP relaxation implemented here is introduced in the paper:
 
-- [Cifuentes (2019)](www.mit.edu/~diegcif/), "A convex relaxation for structured total least squares", *arXiv*, to appear
+- [Cifuentes (2019)](http://www.mit.edu/~diegcif/), "A convex relaxation for structured total least squares", *arXiv*, to appear
