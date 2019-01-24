@@ -52,6 +52,7 @@ u = (sign(W(1,:)).*sqrt(sum(W.^2)))';
 u = sign(u(end))*u(1:n)';
 U = applyAffineMap(PP,u);
 
+% dual sdp
 function [opt, X, x, e] = dual_cvx(n,k,m,PP,G,E,solver,quiet)
 N = (n+1)*k;
 PC = cell(m,1);
@@ -80,45 +81,7 @@ cvx_end
 opt = cvx_optval;
 [x,e] = recoverSol(X);
 
-function [opt, X, x, e] = red_dual_cvx(n,k,m,PP,G,E,solver,quiet)
-N = (n+1)*k;
-PC = cell(m,1);
-
-J1 = [3,6,9,12];
-% J1 = [3,4,5,6,7,8,9,10,11,12];
-J2 = setdiff(1:12,J1);
-I = reshape(1:N,k,n+1);
-I1 = vec(I(J1,:));
-I2 = vec(I(J2,:));
-N1 = length(I1);
-N2 = length(I2);
-
-if quiet
-cvx_begin sdp quiet
-else
-cvx_begin sdp
-end
-    cvx_solver(solver)
-    variable t(1,1);
-    variable Cvec(N,m)
-    dual variable X
-    for i=1:m
-        Ci = Cvec(:,i);
-        pi = PP(:,i);
-        PC{i} = pi*Ci';
-    end
-    sPC = sum(cat(3,PC{:}),3);
-    sPC = blksym(n+1,k,sPC);
-    maximize(t);
-    Q = G - t*E + sPC;
-    mymat = sPC;
-    mymat(I2,:) == zeros(N2,N);
-    X: Q(I1,I1) >= 0;
-cvx_end
-
-opt = cvx_optval;
-[x,e] = recoverSol(X);
-
+% primal sdp
 function [opt, X, x, e] = primal_cvx(n,k,m,PP,G,E,solver,quiet)
 N = (n+1)*k;
 
@@ -154,6 +117,7 @@ cvx_end
 opt = cvx_optval;
 [x,e] = recoverSol(X);
 
+% recover minimizer from moment matrix
 function [x,e] = recoverSol(X)
 N = size(X,1);
 if any(isnan(X))
@@ -165,3 +129,47 @@ else
     x = sqrt(e(N))*V(:,N);
     e = e(N-1);
 end
+
+% vector to symmetric matrix
+function M = vec2smat(v)
+
+N = length(v);
+n = (-1+sqrt(1+8*N))/2;
+
+M = repmat(0*v(1:n),[1,n]);
+I = triu(true(n,n),0);
+I2 = triu(true(n,n),1);
+M(I) = v/2;
+M(I2) = M(I2)*sqrt(2);
+M = M + M.';
+
+% symmetric matrix to vector
+function v = smat2vec(M)
+
+n = size(M,1);
+I = triu(true(n,n),0);
+I2 = triu(true(n,n),1);
+M(I2) = M(I2)*sqrt(2);
+v = M(I);
+
+% Block symmetrization of a matrix
+% Input: mk x mk matrix A
+% Output: symmetric matrix S such that 
+%         each k x k block is also symmetric (there are m^2 blocks)
+function S = blksym(m,k,A)
+
+S = mysym(A);
+if isempty(A); return; end
+
+for i=1:m
+    for j=1:m
+        I = k*(i-1) + (1:k);
+        J = k*(j-1) + (1:k);
+        S(I,J,:) = mysym(S(I,J,:));
+    end
+end
+
+% symmetrize matrix
+function As = mysym(A)
+At = permute(A,[[2,1],3:ndims(A)]);
+As = .5*(A+At);
