@@ -1,6 +1,6 @@
 # stls_sdp
 
-This is a CVX code implementing a semidefinite programming (SDP) relaxation for Structured Total Least Squares (STLS).
+This is a [CVX](http://cvxr.com/cvx/) code implementing a semidefinite programming (SDP) relaxation for Structured Total Least Squares (STLS).
 The STLS problem is the following:
 given an affine space of matrices *L*, and a matrix *θ* in *L*, 
 find the closest rank deficient matrix to *θ* in *L*.
