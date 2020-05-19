@@ -46,10 +46,13 @@ elseif e>1e-4
     warning('solution is not rank one');
 end
 
-W = reshape(x,k,n+1);
-z = W(:,end);
-u = (sign(W(1,:)).*sqrt(sum(W.^2)))';
-u = sign(u(end))*u(1:n)';
+J0 = n*k+1:(n+1)*k;
+z = recoverSol(X(J0,J0));
+u = zeros(1,n);
+for i = 1:n
+    Ji = (i-1)*k+1:i*k;
+    u(i) = trace(X(J0,Ji));
+end
 U = applyAffineMap(PP,u);
 
 % dual sdp
