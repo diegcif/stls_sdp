@@ -1,5 +1,5 @@
 % Constructs the affine map of Hankel structure
-% P: R^n -> R^{k x m}, 
+% P: R^n -> R^{k x m},
 %    u -> hankel(u)
 
 function [PP,n] = hankel_struct(k,m)

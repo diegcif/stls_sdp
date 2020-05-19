@@ -40,7 +40,7 @@ G = kron(G0,Ik);
 E = kron(E0,Ik);
 
 [opt, X, x, e] = primal_cvx(n,k,m,PP,G,E,solver,quiet);
-if e==inf 
+if e==inf
     warning('sdp failed');
 elseif e>1e-4
     warning('solution is not rank one');
@@ -127,7 +127,7 @@ if any(isnan(X))
     x = nan(N,1);
     e = inf;
 else
-    [V,E] = eig(full(X)); 
+    [V,E] = eig(full(X));
     e=diag(E);
     x = sqrt(e(N))*V(:,N);
     e = e(N-1);
@@ -157,7 +157,7 @@ v = M(I);
 
 % Block symmetrization of a matrix
 % Input: mk x mk matrix A
-% Output: symmetric matrix S such that 
+% Output: symmetric matrix S such that
 %         each k x k block is also symmetric (there are m^2 blocks)
 function S = blksym(m,k,A)
 
