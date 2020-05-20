@@ -1,17 +1,17 @@
 % Constructs the affine map of Hankel structure
-% P: R^k -> R^{m x n},
+% SS: R^k -> R^{m x n},
 %    u -> hankel(u)
 
-function [PP,k] = hankel_struct(m,n)
+function [S,k] = hankel_struct(m,n)
 
 k = m+n-1;
 Im = eye(m);
 
-P = zeros(m,k+1,n); % last row of Pi is zero
-PP = zeros(m*(k+1),n);
+SS = zeros(m,k+1,n); % last row of Pi is zero
+S = zeros(m*(k+1),n);
 for i=1:n
-    P(:,i:i+m-1,i) = Im;
-    PP(:,i) = vect(P(:,:,i));
+    SS(:,i:i+m-1,i) = Im;
+    S(:,i) = vect(SS(:,:,i));
 end
 
 function v = vect(M)

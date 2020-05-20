@@ -1,12 +1,12 @@
 % SDP relaxation for structured total least squares (STLS)
 %
 % Let k,m,n integers (m<=n)
-% Let P: R^k -> R^{m x n} be an affine map
+% Let SS: R^k -> R^{m x n} be an affine map
 % Let u1 be a vector in R^k
 % Consider the optimization problem
 %
 % min_u     |u - u1|^2
-% s.t.      P(u) is rank deficient
+% s.t.      SS(u) is rank deficient
 %
 % More generally, the cost can be a quadratic function
 %           (u - u1)' * W * (u - u1)
@@ -15,7 +15,7 @@
 % the respective u1(i) is ignored (as if it was missing).
 %
 % Input:
-% PP - matrix of size (k+1)m x n describing the affine map P
+% S - matrix of size (k+1)m x n describing the affine map SS
 % u1 - a vector of length k, possibly containing nan entries
 %
 % Optional inputs:
@@ -26,16 +26,16 @@
 % Output:
 % opt - optimal value of SDP relaxation
 % u - the minimizer of the problem
-% U - the matrix P(u)
-% z - a vector in the left kernel of P(u)
+% U - the matrix SS(u)
+% z - a vector in the left kernel of SS(u)
 % X - the PSD matrix (relaxation is exact if rank(X)=1)
 %
 % Usage:
-% [opt,u,U,z,X] = sdp_stls(PP,u1,W,solver,quiet)
+% [opt,u,U,z,X] = sdp_stls(S,u1,W,solver,quiet)
 % The optional arguments can be omitted or set to empty values.
-% For instance: sdp_stls(PP,u1,[],solver)
+% For instance: sdp_stls(S,u1,[],solver)
 
-function [opt,u,U,z,X] = sdp_stls(PP,u1,W,solver,quiet)
+function [opt,u,U,z,X] = sdp_stls(S,u1,W,solver,quiet)
 
 narginchk(2,5);
 if nargin<3||isempty(W); W = diag(~isnan(u1)); end
@@ -43,8 +43,8 @@ if nargin<4||isempty(solver); solver = 'sdpt3'; end
 if nargin<5||isempty(quiet); quiet = true; end
 
 k = length(u1);
-n = size(PP,2);
-m = size(PP,1)/(k+1);
+n = size(S,2);
+m = size(S,1)/(k+1);
 u1(isnan(u1)) = 0;
 
 % fprintf('PSD matrix size: %d\k',(k+1)*m)
@@ -58,7 +58,7 @@ Im = eye(m);
 G = kron(G0,Im);
 E = kron(E0,Im);
 
-[opt, X] = primal_cvx(k,m,n,PP,G,E,solver,quiet);
+[opt, X] = primal_cvx(k,m,n,S,G,E,solver,quiet);
 [~,e] = recoverSol(X);
 if e==inf
     warning('sdp failed');
@@ -73,12 +73,12 @@ for i = 1:k
     Ji = (i-1)*m+1:i*m;
     u(i) = trace(X(J0,Ji));
 end
-U = applyAffineMap(PP,u);
+U = applyAffineMap(S,u);
 
 % dual sdp
-function [opt, X] = dual_cvx(k,m,n,PP,G,E,solver,quiet)
+function [opt, X] = dual_cvx(k,m,n,S,G,E,solver,quiet)
 N = (k+1)*m;
-PC = cell(n,1);
+SC = cell(n,1);
 
 if quiet
 cvx_begin sdp quiet
@@ -91,33 +91,33 @@ end
     dual variable X
     for i=1:n
         Ci = Cvec(:,i);
-        pi = PP(:,i);
-        PC{i} = pi*Ci';
+        si = S(:,i);
+        SC{i} = si*Ci';
     end
-    sPC = sum(cat(3,PC{:}),3);
-    sPC = blksym(k+1,m,sPC);
+    sSC = sum(cat(3,SC{:}),3);
+    sSC = blksym(k+1,m,sSC);
     maximize(t);
-    Q = G - t*E + sPC;
+    Q = G - t*E + sSC;
     X: Q >= 0;
 cvx_end
 
 opt = cvx_optval;
 
 % primal sdp
-function [opt, X] = primal_cvx(k,m,n,PP,G,E,solver,quiet)
+function [opt, X] = primal_cvx(k,m,n,S,G,E,solver,quiet)
 N = (k+1)*m;
 
 e = speye(N);
-PC = zeros(N,N,n*N);
+SC = zeros(N,N,n*N);
 for i=1:n
     for j=1:N
-        PC(:,:,(i-1)*N+j) = PP(:,i)*e(j,:);
+        SC(:,:,(i-1)*N+j) = S(:,i)*e(j,:);
     end
 end
-PC = blksym(k+1,m,PC);
+SC = blksym(k+1,m,SC);
 A = zeros(n*N,N*(N+1)/2);
 for l=1:n*N
-    A(l,:) = smat2vec(PC(:,:,l));
+    A(l,:) = smat2vec(SC(:,:,l));
 end
 A = sparse(A);
 
@@ -175,18 +175,18 @@ v = M(I);
 
 % Block symmetrization of a matrix
 % Input: mk x mk matrix A
-% Output: symmetric matrix S such that
+% Output: symmetric matrix As such that
 %         each m x m block is also symmetric (there are n^2 blocks)
-function S = blksym(n,m,A)
+function As = blksym(n,m,A)
 
-S = mysym(A);
+As = mysym(A);
 if isempty(A); return; end
 
 for i=1:n
     for j=1:n
         I = m*(i-1) + (1:m);
         J = m*(j-1) + (1:m);
-        S(I,J,:) = mysym(S(I,J,:));
+        As(I,J,:) = mysym(As(I,J,:));
     end
 end
 

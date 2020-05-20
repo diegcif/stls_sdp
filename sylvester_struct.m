@@ -1,17 +1,17 @@
 % Constructs the affine map of Sylvester structure
-% P: R^D -> R^{m x n},
+% SS: R^D -> R^{m x n},
 %    (u1,u2) -> Syl(u1,u2)
 
-function [PP,k,m,n] = sylvester_struct(D,d)
+function [S,k,m,n] = sylvester_struct(D,d)
 k = sum(D+1);
 m = sum(D)-2*d+2;
 n = sum(D)-d+1;
 
-PP = zeros(m*(k+1),n);
+S = zeros(m*(k+1),n);
 for i=1:sum(D)-d+1
     Pi = get_matrixGCD_i(D,d,i);
     Pi = [Pi zeros(m,1)];
-    PP(:,i) = Pi(:);
+    S(:,i) = Pi(:);
 end
 
 function Pi = get_matrixGCD_i(D,d,i)
