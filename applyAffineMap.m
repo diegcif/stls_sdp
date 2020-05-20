@@ -1,15 +1,15 @@
 % Applies the affine map
-% P: R^n -> R^{k x m}
-% to a vector u in R^n
+% P: R^k -> R^{m x n}
+% to a vector u in R^k
 
 function U = applyAffineMap(PP,u)
 
-n = length(u);
-m = size(PP,2);
-k = size(PP,1)/(n+1);
+k = length(u);
+n = size(PP,2);
+m = size(PP,1)/(k+1);
 
 v = [u(:);1];
-U = zeros(k,m);
-for i=1:m
-    U(:,i) = reshape(PP(:,i),[k,n+1])*v;
+U = zeros(m,n);
+for i=1:n
+    U(:,i) = reshape(PP(:,i),[m,k+1])*v;
 end

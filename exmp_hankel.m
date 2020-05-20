@@ -1,12 +1,12 @@
 % Compute the nearest rank deficient Hankel matrix
 
-% construct space of k x m hankel matrices
-k = 4;
-m = 6;
-[PP,n] = hankel_struct(k,m);
+% construct space of m x n hankel matrices
+m = 4;
+n = 6;
+[PP,k] = hankel_struct(m,n);
 
 % generate random hankel matrix
-u1 = randn(1,n);
+u1 = randn(1,k);
 u1 = u1/norm(u1);
 U1 = applyAffineMap(PP,u1);
 disp('random hankel matrix')

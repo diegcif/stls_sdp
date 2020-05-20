@@ -4,7 +4,7 @@
 D = [6 5]; % degrees of f1 and f2
 d = 4; % degree of the gcd
 noise = 5e-1;
-[PP,n,k,m] = sylvester_struct(D,d);
+PP = sylvester_struct(D,d);
 
 % generate random polynomials
 g = randn(1,d+1); % gcd
