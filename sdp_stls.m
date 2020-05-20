@@ -8,10 +8,20 @@
 % min_u     |u - u1|^2
 % s.t.      P(u) is rank deficient
 %
+% More generally, the cost can be a quadratic function
+%           (u - u1)' * W * (u - u1)
+% for some symmetric weight matrix W of size n x n.
+% If W is diagonal and the entry W_ii is equal to zero then
+% the respective u1(i) is ignored (as if it was missing).
+%
 % Input:
 % PP - matrix of size (n+1)k x m describing the affine map P
-% u1 - a vector of length n
+% u1 - a vector of length n, possibly containing nan entries
+%
+% Optional inputs:
+% W - weight matrix of size n x n (default W_ii=1 except for 'nan' entries)
 % solver - SDP solver (default 'sdpt3')
+% quiet - set to false to display information (default true)
 %
 % Output:
 % opt - optimal value of SDP relaxation
@@ -19,27 +29,37 @@
 % U - the matrix P(u)
 % z - a vector in the left kernel of P(u)
 % X - the PSD matrix (relaxation is exact if rank(X)=1)
+%
+% Usage:
+% [opt,u,U,z,X] = sdp_stls(PP,u1,W,solver,quiet)
+% The optional arguments can be omitted or set to empty values.
+% For instance: sdp_stls(PP,u1,[],solver)
 
-function [opt,u,U,z,X] = sdp_stls(PP,u1,solver,quiet)
+function [opt,u,U,z,X] = sdp_stls(PP,u1,W,solver,quiet)
 
-if nargin < 3; solver = 'sdpt3'; end
-if nargin < 4; quiet = true; end
+narginchk(2,5);
+if nargin<3||isempty(W); W = diag(~isnan(u1)); end
+if nargin<4||isempty(solver); solver = 'sdpt3'; end
+if nargin<5||isempty(quiet); quiet = true; end
 
 n = length(u1);
 m = size(PP,2);
 k = size(PP,1)/(n+1);
+u1(isnan(u1)) = 0;
 
 % fprintf('PSD matrix size: %d\n',(n+1)*k)
 
-u1 = reshape(u1,[1,n]);
-G0 = [eye(n) -u1.'; -u1 norm(u1)^2];
+u1 = reshape(u1,[n,1]);
+g = [eye(n) -u1];
+G0 = g'*W*g;
 E0 = sparse(n+1,n+1,1);
 
 Ik = eye(k);
 G = kron(G0,Ik);
 E = kron(E0,Ik);
 
-[opt, X, x, e] = primal_cvx(n,k,m,PP,G,E,solver,quiet);
+[opt, X] = primal_cvx(n,k,m,PP,G,E,solver,quiet);
+[~,e] = recoverSol(X);
 if e==inf
     warning('sdp failed');
 elseif e>1e-4
@@ -56,7 +76,7 @@ end
 U = applyAffineMap(PP,u);
 
 % dual sdp
-function [opt, X, x, e] = dual_cvx(n,k,m,PP,G,E,solver,quiet)
+function [opt, X] = dual_cvx(n,k,m,PP,G,E,solver,quiet)
 N = (n+1)*k;
 PC = cell(m,1);
 
@@ -82,10 +102,9 @@ end
 cvx_end
 
 opt = cvx_optval;
-[x,e] = recoverSol(X);
 
 % primal sdp
-function [opt, X, x, e] = primal_cvx(n,k,m,PP,G,E,solver,quiet)
+function [opt, X] = primal_cvx(n,k,m,PP,G,E,solver,quiet)
 N = (n+1)*k;
 
 e = speye(N);
@@ -118,7 +137,6 @@ end
 cvx_end
 
 opt = cvx_optval;
-[x,e] = recoverSol(X);
 
 % recover minimizer from moment matrix
 function [x,e] = recoverSol(X)
