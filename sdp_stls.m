@@ -19,7 +19,7 @@
 %
 % Input:
 % S - matrix of size (k+1)m x n describing the affine map SS
-% u1 - a vector of length k, possibly containing nan entries
+% u1 - a vector of length k, possibly containing 'nan' entries
 %
 % Optional inputs:
 % W - weight matrix of size k x k (default W_ii=1 except for 'nan' entries)
