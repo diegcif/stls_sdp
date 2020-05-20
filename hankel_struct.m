@@ -7,7 +7,7 @@ function [S,k] = hankel_struct(m,n)
 k = m+n-1;
 Im = eye(m);
 
-SS = zeros(m,k+1,n); % last row of Pi is zero
+SS = zeros(m,k+1,n);
 S = zeros(m*(k+1),n);
 for i=1:n
     SS(:,i:i+m-1,i) = Im;

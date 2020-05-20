@@ -14,6 +14,9 @@
 % If W is diagonal and the entry W_ii is equal to zero then
 % the respective u1(i) is ignored (as if it was missing).
 %
+% The function also aceepts problems with complex data.
+% They are internally converted to real valued problems.
+%
 % Input:
 % S - matrix of size (k+1)m x n describing the affine map SS
 % u1 - a vector of length k, possibly containing nan entries
@@ -45,9 +48,13 @@ if nargin<5||isempty(quiet); quiet = true; end
 k = length(u1);
 n = size(S,2);
 m = size(S,1)/(k+1);
+if floor(m)~=m; error('Mismatch in dimensions'); end
 u1(isnan(u1)) = 0;
 
-% fprintf('PSD matrix size: %d\k',(k+1)*m)
+iscomplex = ~(isreal(S) && isreal(u1) && isreal(W));
+if iscomplex; [k,m,n,S,u1,W] = data2real(k,m,n,S,u1,W); end
+
+% fprintf('PSD matrix size: %d\n',(k+1)*m)
 
 u1 = reshape(u1,[k,1]);
 g = [eye(k) -u1];
@@ -59,11 +66,11 @@ G = kron(G0,Im);
 E = kron(E0,Im);
 
 [opt, X] = primal_cvx(k,m,n,S,G,E,solver,quiet);
-[~,e] = recoverSol(X);
-if e==inf
-    warning('sdp failed');
-elseif e>1e-4
-    warning('solution is not rank one');
+
+[~,E] = eig(full(X));
+r=nnz(diag(E)>1e-4);
+if (~iscomplex && r>1) || (iscomplex && r>2)
+    warning('sdp might not be exact');
 end
 
 J0 = k*m+1:(k+1)*m;
@@ -74,6 +81,28 @@ for i = 1:k
     u(i) = trace(X(J0,Ji));
 end
 U = applyAffineMap(S,u);
+
+if iscomplex
+    [u,U,z] = data2complex(k,m,n,u,U,z);
+end
+
+function [k,m,n,S,u1,W] = data2real(k,m,n,S,u1,W)
+toReal = @(a) [real(a) -imag(a); imag(a) real(a)];
+u1 = [real(u1) imag(u1)];
+if ~ishermitian(W); error('W must be hermitian'); end
+W = toReal(W);
+SS = mat2cell(S,m*ones(k+1,1),n);
+B = SS(1:k); A = SS(k+1);
+iB = cellfun(@(x) 1i*x, B,'Unif',0);
+SS = cellfun(toReal, [B; iB; A],'Unif',0);
+S = cell2mat(SS);
+k = 2*k; m = 2*m; n = 2*n;
+
+function [u,U,z] = data2complex(k,m,n,u,U,z)
+k = k/2; m = m/2; n = n/2;
+u = u(1:k) + 1i * u(k+1:2*k);
+U = U(1:m,1:n) + 1i * U(m+1:2*m,1:n);
+z = z(1:m) + 1i * z(m+1:2*m);
 
 % dual sdp
 function [opt, X] = dual_cvx(k,m,n,S,G,E,solver,quiet)
