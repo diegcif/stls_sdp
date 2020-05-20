@@ -14,7 +14,7 @@
 % If W is diagonal and the entry W_ii is equal to zero then
 % the respective u1(i) is ignored (as if it was missing).
 %
-% The function also aceepts problems with complex data.
+% The function also accepts problems with complex data.
 % They are internally converted to real valued problems.
 %
 % Input:
@@ -48,15 +48,16 @@ if nargin<5||isempty(quiet); quiet = true; end
 k = length(u1);
 n = size(S,2);
 m = size(S,1)/(k+1);
-if floor(m)~=m; error('Mismatch in dimensions'); end
+if floor(m)~=m; error('mismatch in dimensions'); end
 u1(isnan(u1)) = 0;
+u1 = reshape(u1,[k,1]);
 
 iscomplex = ~(isreal(S) && isreal(u1) && isreal(W));
 if iscomplex; [k,m,n,S,u1,W] = data2real(k,m,n,S,u1,W); end
+W = .5*(W+W');
 
 % fprintf('PSD matrix size: %d\n',(k+1)*m)
 
-u1 = reshape(u1,[k,1]);
 g = [eye(k) -u1];
 G0 = g'*W*g;
 E0 = sparse(k+1,k+1,1);
@@ -75,7 +76,7 @@ end
 
 J0 = k*m+1:(k+1)*m;
 z = recoverSol(X(J0,J0));
-u = zeros(1,k);
+u = zeros(k,1);
 for i = 1:k
     Ji = (i-1)*m+1:i*m;
     u(i) = trace(X(J0,Ji));
@@ -88,8 +89,8 @@ end
 
 function [k,m,n,S,u1,W] = data2real(k,m,n,S,u1,W)
 toReal = @(a) [real(a) -imag(a); imag(a) real(a)];
-u1 = [real(u1) imag(u1)];
-if ~ishermitian(W); error('W must be hermitian'); end
+u1 = [real(u1); imag(u1)];
+if norm(W-W')>1e-4; warning('W forced to be hermitian'); end
 W = toReal(W);
 SS = mat2cell(S,m*ones(k+1,1),n);
 B = SS(1:k); A = SS(k+1);

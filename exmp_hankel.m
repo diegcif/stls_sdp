@@ -6,7 +6,7 @@ n = 6;
 [S,k] = hankel_struct(m,n);
 
 % generate random hankel matrix
-u1 = randn(1,k);
+u1 = randn(k,1);
 U1 = applyAffineMap(S,u1);
 disp('random hankel matrix')
 disp(U1)

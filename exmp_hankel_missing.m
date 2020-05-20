@@ -9,7 +9,7 @@ n = 6;
 i_miss = [m+1,k-m+1];
 
 % generate random hankel matrix
-u1 = randn(1,k);
+u1 = randn(k,1);
 u1(i_miss) = nan;
 U1 = hankel(u1(1:m),u1(m:k));
 disp('random hankel matrix')
